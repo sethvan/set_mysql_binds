@@ -10,7 +10,7 @@ add_library( set_mysql_binds SHARED
 src/utilities.cpp
 src/getDBTables.cpp
 src/createDBTableBinds.cpp
-src/set_mysql_binds.cpp )
+)
 
 find_library(MYSQLCLIENT_LIBRARY NAMES mysqlclient)
 
