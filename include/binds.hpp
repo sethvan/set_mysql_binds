@@ -8,6 +8,7 @@
 #include <iostream>
 #include <memory>
 #include <optional>
+#include <unordered_map>
 #include <vector>
 
 #include "makeVec.h"
@@ -30,17 +31,21 @@ namespace set_mysql_binds {
         std::vector<std::unique_ptr<T>> columns;
         std::vector<MYSQL_BIND> selection;
 
-       public:
-        // Points to columns' elements. After object instantiated, do not want column elements
-        // added or deleted, just access for selecting and modifying.
-        std::vector<T*> fields;
+        // linked to Binds::operator[] and Points to columns' elements.
+        // After object instantiated, do not want column elements added or deleted,
+        // just access for selecting and modifying.
+        std::unordered_map<std::string_view, T*> fields;
 
+       public:
         Binds() = delete;
         Binds( std::vector<std::unique_ptr<T>> _columns );  // To set once the correct order of
                                                             // MYSQL_BINDs for the prepared statement.
 
         void displayFields() const;
+        // Sets binds for whatever fields are marked is_selected
+        // By default all fields are marked is_selected during construction
         void setBinds();
+        // Names given to overloaded method will be only ones marked is_selected and bound
         void setBinds( const std::vector<std::string_view>& sc );
         MYSQL_BIND* getBinds() {
             return selection.data();
@@ -48,14 +53,14 @@ namespace set_mysql_binds {
         size_t getBindsSize() const {  // for testing during development
             return selection.size();
         }
+        [[nodiscard]] T* operator[]( std::string_view fieldName );
     };
 
     template <typename T>
     Binds<T>::Binds( std::vector<std::unique_ptr<T>> _columns ) : columns( std::move( _columns ) ) {
 
-        for ( size_t i = 0; i < columns.size(); ++i ) {
-            fields.emplace_back( columns[i].get() );
-        }
+        std::for_each( columns.begin(), columns.end(),
+                       [&]( const auto& column ) { fields[column->fieldName] = column.get(); } );
     }
 
     template <typename T>
@@ -65,7 +70,7 @@ namespace set_mysql_binds {
         std::cout << std::left << std::setw( 30 ) << "Field Type";
         std::cout << std::left << std::setw( 30 ) << "Field Value" << '\n';
         std::cout << std::left << std::setw( 105 ) << std::setfill( '-' ) << '-' << std::setfill( ' ' ) << '\n';
-        std::for_each( fields.begin(), fields.end(), [&]( const auto& o ) {
+        std::for_each( columns.begin(), columns.end(), [&]( const auto& o ) {
             std::cout << std::left << std::setw( 45 ) << o->fieldName;
             std::cout << std::left << std::setw( 30 ) << fieldTypes[o->bufferType];
             o->printValue();
@@ -112,6 +117,11 @@ namespace set_mysql_binds {
 
         selection.erase( selection.begin(), selection.end() );  // in case a previous selection was made
         Binds<T>::setBinds();
+    }
+
+    template <typename T>
+    T* Binds<T>::operator[]( std::string_view fieldName ) {
+        return fields.at( fieldName );
     }
 
 }  // namespace set_mysql_binds

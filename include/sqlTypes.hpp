@@ -105,7 +105,7 @@ namespace set_mysql_binds {
 
         // Arguments for `a` that are lvalues need to match type T and
         // arguments that are rvalues should be cast as T type so as to disambiguate
-        // and prevent std::bad_any_cast exception.
+        // and prevent std::bad_any_cast exceptions.
         void set_value( const std::any& a ) override {
             value = std::any_cast<T>( a );
         }
