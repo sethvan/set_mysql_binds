@@ -40,7 +40,8 @@ namespace set_mysql_binds {
         unsigned long long bufferLength;
         bool is_selected;
 
-        SqlCType( const char* _fieldName, enum_field_types type, void* _buffer, unsigned long long _bufferLength = 0 )
+        SqlCType( std::string_view _fieldName, enum_field_types type, void* _buffer,
+                  unsigned long long _bufferLength = 0 )
             : fieldName( _fieldName ),
               bufferType( type ),
               isNull( 0 ),
@@ -79,7 +80,8 @@ namespace set_mysql_binds {
 
     class InputCType : public SqlCType {
        public:
-        InputCType( const char* _fieldName, enum_field_types type, void* _buffer, unsigned long long _bufferLength = 0 )
+        InputCType( std::string_view _fieldName, enum_field_types type, void* _buffer,
+                    unsigned long long _bufferLength = 0 )
             : SqlCType( _fieldName, type, _buffer, _bufferLength ) {
         }
         virtual ~InputCType() = default;
@@ -93,13 +95,17 @@ namespace set_mysql_binds {
 
        public:
         TypeInputImpl() = delete;
-        TypeInputImpl( const char* _fieldName ) : InputCType( _fieldName, Type, &value ) {
+        TypeInputImpl( std::string_view _fieldName, unsigned long long _bufferLength = 0 )
+            : InputCType( _fieldName, Type, &value, _bufferLength ) {
         }
 
         void printValue() const override {
             std::cout << std::left << std::setw( 30 ) << value;
         }
 
+        // Arguments for `a` that are lvalues need to match type T and
+        // arguments that are rvalues should be cast as T type so as to disambiguate
+        // and prevent std::bad_any_cast exception.
         void set_value( const std::any& a ) override {
             value = std::any_cast<T>( a );
         }
@@ -107,7 +113,7 @@ namespace set_mysql_binds {
 
     class OutputCType : public SqlCType {
        public:
-        OutputCType( const char* _fieldName, enum_field_types type, void* _buffer,
+        OutputCType( std::string_view _fieldName, enum_field_types type, void* _buffer,
                      unsigned long long _bufferLength = 0 )
             : SqlCType( _fieldName, type, _buffer, _bufferLength ) {
         }
@@ -120,7 +126,8 @@ namespace set_mysql_binds {
 
        public:
         TypeOutputImpl() = delete;
-        TypeOutputImpl( const char* _fieldName ) : OutputCType( _fieldName, Type, &value ) {
+        TypeOutputImpl( std::string_view _fieldName, unsigned long long _bufferLength = 0 )
+            : OutputCType( _fieldName, Type, &value, _bufferLength ) {
         }
 
         void printValue() const override {
@@ -128,32 +135,15 @@ namespace set_mysql_binds {
         }
     };
 
-    using TypeCharInput = TypeInputImpl<signed char, MYSQL_TYPE_TINY>;
-    using TypeCharOutput = TypeOutputImpl<signed char, MYSQL_TYPE_TINY>;
-
-    using TypeShortInput = TypeInputImpl<short, MYSQL_TYPE_SHORT>;
-    using TypeShortOutput = TypeOutputImpl<short, MYSQL_TYPE_SHORT>;
-
-    using TypeIntInput = TypeInputImpl<int, MYSQL_TYPE_LONG>;
-    using TypeIntOutput = TypeOutputImpl<int, MYSQL_TYPE_LONG>;
-
-    using TypeLLInput = TypeInputImpl<long long, MYSQL_TYPE_LONGLONG>;
-    using TypeLLOutput = TypeOutputImpl<long long, MYSQL_TYPE_LONGLONG>;
-
-    using TypeFloatInput = TypeInputImpl<float, MYSQL_TYPE_FLOAT>;
-    using TypeFloatOutput = TypeOutputImpl<float, MYSQL_TYPE_FLOAT>;
-
-    using TypeDoubleInput = TypeInputImpl<double, MYSQL_TYPE_DOUBLE>;
-    using TypeDoubleOutput = TypeOutputImpl<double, MYSQL_TYPE_DOUBLE>;
-
+    template <enum_field_types TYPE>
     class TypeMysqlTimeInput : public InputCType {
        private:
         MYSQL_TIME value;
 
        public:
         TypeMysqlTimeInput() = delete;
-        TypeMysqlTimeInput( const char* _fieldName, enum_field_types type ) : InputCType( _fieldName, type, &value ) {
-            if ( !isTimeType( type ) ) {
+        TypeMysqlTimeInput( std::string_view _fieldName ) : InputCType( _fieldName, TYPE, &value ) {
+            if ( !isTimeType( TYPE ) ) {
                 throw std::runtime_error( "Invalid buffer type given for TypeMysqlTimeInput" );
             }
         }
@@ -165,14 +155,15 @@ namespace set_mysql_binds {
         }
     };
 
+    template <enum_field_types TYPE>
     class TypeMysqlTimeOutput : public OutputCType {
        private:
         MYSQL_TIME value;
 
        public:
         TypeMysqlTimeOutput() = delete;
-        TypeMysqlTimeOutput( const char* _fieldName, enum_field_types type ) : OutputCType( _fieldName, type, &value ) {
-            if ( !isTimeType( type ) ) {
+        TypeMysqlTimeOutput( std::string_view _fieldName ) : OutputCType( _fieldName, TYPE, &value ) {
+            if ( !isTimeType( TYPE ) ) {
                 throw std::runtime_error( "Invalid buffer type given for TypeMysqlTimeOutput" );
             }
         }
@@ -181,17 +172,14 @@ namespace set_mysql_binds {
         }
     };
 
+    template <enum_field_types TYPE>
     class TypeCharArrayInput : public InputCType {
 
        public:
         TypeCharArrayInput() = delete;
-        TypeCharArrayInput( const char* _fieldName, enum_field_types type, unsigned long long _bufferLength )
-            : InputCType( _fieldName, type, nullptr, _bufferLength ) {
-            if ( !isCharArrayReq( type ) ) {
-                throw std::runtime_error( "Invalid buffer type given for TypeCharArrayInput" );
-            }
+        TypeCharArrayInput( std::string_view _fieldName, unsigned long long _bufferLength )
+            : InputCType( _fieldName, TYPE, nullptr, _bufferLength ) {
         }
-
         void printValue() const override {
             std::cout << std::left << std::setw( 30 ) << charVec.data();
         }
@@ -202,20 +190,118 @@ namespace set_mysql_binds {
         }
     };
 
+    template <enum_field_types TYPE>
     class TypeCharArrayOutput : public OutputCType {
 
        public:
         TypeCharArrayOutput() = delete;
-        TypeCharArrayOutput( const char* _fieldName, enum_field_types type, unsigned long long _bufferLength )
-            : OutputCType( _fieldName, type, nullptr, _bufferLength ) {
-            if ( !isCharArray( type ) ) {
-                throw std::runtime_error( "Invalid buffer type given for TypeCharArrayOutput" );
-            }
+        TypeCharArrayOutput( std::string_view _fieldName, unsigned long long _bufferLength )
+            : OutputCType( _fieldName, TYPE, nullptr, _bufferLength ) {
         }
         void printValue() const override {
             std::cout << std::left << std::setw( 30 ) << charVec.data();
         }
     };
+
+    using CharInput = TypeCharArrayInput<MYSQL_TYPE_STRING>;
+    using CharOutput = TypeCharArrayInput<MYSQL_TYPE_STRING>;
+
+    using VarCharInput = TypeCharArrayInput<MYSQL_TYPE_STRING>;
+    using VarCharOutput = TypeCharArrayOutput<MYSQL_TYPE_VAR_STRING>;
+
+    using TinyTextInput = TypeCharArrayInput<MYSQL_TYPE_STRING>;
+    using TinyTextOutput = TypeCharArrayOutput<MYSQL_TYPE_TINY_BLOB>;
+
+    using TextInput = TypeCharArrayInput<MYSQL_TYPE_STRING>;
+    using TextOutput = TypeCharArrayOutput<MYSQL_TYPE_BLOB>;
+
+    using BlobInput = TypeCharArrayInput<MYSQL_TYPE_BLOB>;
+    using BlobOutput = TypeCharArrayInput<MYSQL_TYPE_BLOB>;
+
+    using MediumTextInput = TypeCharArrayInput<MYSQL_TYPE_STRING>;
+    using MediumTextOutput = TypeCharArrayOutput<MYSQL_TYPE_MEDIUM_BLOB>;
+
+    using MediumBlobInput = TypeCharArrayInput<MYSQL_TYPE_BLOB>;
+    using MediumBlobOutput = TypeCharArrayOutput<MYSQL_TYPE_MEDIUM_BLOB>;
+
+    using LongTextInput = TypeCharArrayInput<MYSQL_TYPE_STRING>;
+    using LongTextOutput = TypeCharArrayOutput<MYSQL_TYPE_MEDIUM_BLOB>;
+
+    using LongBlobInput = TypeCharArrayInput<MYSQL_TYPE_BLOB>;
+    using LongBlobOutput = TypeCharArrayOutput<MYSQL_TYPE_LONG_BLOB>;
+
+    using TinyIntInput = TypeInputImpl<signed char, MYSQL_TYPE_TINY>;
+    using TinyIntInputUnsigned = TypeInputImpl<unsigned char, MYSQL_TYPE_TINY>;
+    using TinyIntOutput = TypeOutputImpl<signed char, MYSQL_TYPE_TINY>;
+    using TinyIntOutputUnsigned = TypeOutputImpl<unsigned char, MYSQL_TYPE_TINY>;
+
+    using SmallIntInput = TypeInputImpl<short, MYSQL_TYPE_SHORT>;
+    using SmallIntInputUnsigned = TypeInputImpl<unsigned short, MYSQL_TYPE_SHORT>;
+    using SmallIntOutput = TypeOutputImpl<short, MYSQL_TYPE_SHORT>;
+    using SmallIntOutputUnsigned = TypeOutputImpl<unsigned short, MYSQL_TYPE_SHORT>;
+
+    using MediumIntInput = TypeInputImpl<int, MYSQL_TYPE_LONG>;
+    using MediumIntInputUnsigned = TypeInputImpl<unsigned int, MYSQL_TYPE_LONG>;
+    using MediumIntOutput = TypeOutputImpl<int, MYSQL_TYPE_INT24>;
+    using MediumIntOutputUnsigned = TypeOutputImpl<unsigned int, MYSQL_TYPE_INT24>;
+
+    using IntInput = TypeInputImpl<int, MYSQL_TYPE_LONG>;
+    using IntInputUnsigned = TypeInputImpl<unsigned int, MYSQL_TYPE_LONG>;
+    using IntOutput = TypeOutputImpl<int, MYSQL_TYPE_LONG>;
+    using IntOutputUnsigned = TypeOutputImpl<unsigned int, MYSQL_TYPE_LONG>;
+
+    using BigIntInput = TypeInputImpl<long long, MYSQL_TYPE_LONGLONG>;
+    using BigIntInputUnsigned = TypeInputImpl<unsigned long long, MYSQL_TYPE_LONGLONG>;
+    using BigIntOutput = TypeOutputImpl<long long, MYSQL_TYPE_LONGLONG>;
+    using BigIntOutputUnsigned = TypeOutputImpl<unsigned long long, MYSQL_TYPE_LONGLONG>;
+
+    using FloatInput = TypeInputImpl<float, MYSQL_TYPE_FLOAT>;
+    using FloatOutput = TypeOutputImpl<float, MYSQL_TYPE_FLOAT>;
+
+    using DoubleInput = TypeInputImpl<double, MYSQL_TYPE_DOUBLE>;
+    using DoubleOutput = TypeOutputImpl<double, MYSQL_TYPE_DOUBLE>;
+
+    using DecimalInput = TypeInputImpl<double, MYSQL_TYPE_DOUBLE>;
+    using DecimalOutput = TypeCharArrayOutput<MYSQL_TYPE_NEWDECIMAL>;
+
+    using DateInput = TypeMysqlTimeInput<MYSQL_TYPE_DATE>;
+    using DateOutput = TypeMysqlTimeOutput<MYSQL_TYPE_DATE>;
+
+    using DateTimeInput = TypeMysqlTimeInput<MYSQL_TYPE_DATETIME>;
+    using DateTimeOutput = TypeMysqlTimeOutput<MYSQL_TYPE_DATETIME>;
+
+    using TimeStampInput = TypeMysqlTimeInput<MYSQL_TYPE_TIMESTAMP>;
+    using TimeStampOutput = TypeMysqlTimeOutput<MYSQL_TYPE_TIMESTAMP>;
+
+    using TimeInput = TypeMysqlTimeInput<MYSQL_TYPE_TIME>;
+    using TimeOutput = TypeMysqlTimeOutput<MYSQL_TYPE_TIME>;
+
+    using EnumInput = TypeCharArrayInput<MYSQL_TYPE_STRING>;
+    using EnumOutput = TypeCharArrayOutput<MYSQL_TYPE_STRING>;
+
+    using SetInput = TypeCharArrayInput<MYSQL_TYPE_STRING>;
+    using SetOutput = TypeCharArrayOutput<MYSQL_TYPE_STRING>;
+
+    using BooleanInput = TypeInputImpl<signed char, MYSQL_TYPE_TINY>;
+    using Booleanoutput = TypeOutputImpl<signed char, MYSQL_TYPE_TINY>;
+
+    using BitInput = TypeOutputImpl<unsigned long, MYSQL_TYPE_BIT>;
+    using BitOutput = TypeOutputImpl<unsigned long, MYSQL_TYPE_BIT>;
+
+    using GeometryInput = TypeCharArrayInput<MYSQL_TYPE_BLOB>;
+    using GeometryOutput = TypeCharArrayOutput<MYSQL_TYPE_BLOB>;
+
+    using JsonInput = TypeCharArrayInput<MYSQL_TYPE_JSON>;
+    using JsonOutput = TypeCharArrayOutput<MYSQL_TYPE_JSON>;
+
+    using BinaryInput = TypeCharArrayInput<MYSQL_TYPE_STRING>;
+    using BinaryOutput = TypeCharArrayOutput<MYSQL_TYPE_BLOB>;
+
+    using VarbinaryInput = TypeCharArrayInput<MYSQL_TYPE_BLOB>;
+    using VarbinaryOutput = TypeCharArrayOutput<MYSQL_TYPE_VAR_STRING>;
+
+    using TinyBlobInput = TypeCharArrayInput<MYSQL_TYPE_TINY_BLOB>;
+    using TinyBlobOutput = TypeCharArrayOutput<MYSQL_TYPE_TINY_BLOB>;
 
 }  // namespace set_mysql_binds
 
