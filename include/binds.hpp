@@ -1,5 +1,5 @@
-#ifndef INCLUDED_Binds_H
-#define INCLUDED_Binds_H
+#ifndef INCLUDED_BINDS_H
+#define INCLUDED_BINDS_H
 
 #include <algorithm>
 #include <exception>
@@ -11,7 +11,6 @@
 #include <unordered_map>
 #include <vector>
 
-#include "makeVec.h"
 #include "sqlTypes.hpp"
 #include "utilities.h"
 

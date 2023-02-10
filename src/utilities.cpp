@@ -51,4 +51,13 @@ namespace set_mysql_binds {
         int enumValue = static_cast<int>( type );
         return ( enumValue == 7 || ( enumValue > 9 && enumValue < 13 ) );
     }
+
+    const std::string charArr( const std::string str ) {
+        return str;
+    }
+
+    const std::string charArr( const std::vector<char> vec ) {
+        return std::string( vec.data(), vec.size() );
+    }
+
 }  // namespace set_mysql_binds

@@ -4,8 +4,10 @@
 #include "binds.hpp"
 #include "createDBTableBinds.h"
 #include "getDBTables.h"
-#include "makeVec.h"
+#include "makeBinds.hpp"
+#include "setcolor.hpp"
 #include "sqlTypes.hpp"
+#include "traits.h"
 #include "typeCreationStrings.h"
 #include "utilities.h"
 

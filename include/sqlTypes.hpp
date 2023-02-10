@@ -7,9 +7,11 @@
 #include <cstring>
 #include <iomanip>
 #include <stdexcept>
+#include <string>
 #include <string_view>
-#include <vector>
+#include <type_traits>
 
+#include "setcolor.hpp"
 #include "utilities.h"
 
 /*
@@ -86,6 +88,31 @@ namespace set_mysql_binds {
         }
         virtual ~InputCType() = default;
         virtual void set_value( const std::any& a ) = 0;
+        std::vector<char>& CharVec() {
+            if ( !isCharArray( bufferType ) ) {
+                std::ostringstream os;
+                os << setcolor( Color::RED ) << "Error: "
+                   << "set_mysql_binds::SqlCType::CharVec() should only be called when "
+                   << "set_mysql_binds::isCharArray(set_mysql_binds::SqlCType::bufferType)"
+                   << " evaluates to " << setcolor( Color::GREEN ) << "true"
+                   << ".\n           set_mysql_binds::SqlCType::bufferType " << fieldTypes[bufferType]
+                   << " evaluates to " << setcolor( Color::RED ) << "false"
+                   << ".\n";
+                throw std::runtime_error( os.str() );
+            }
+            else {
+                return charVec;
+            }
+        }
+
+        template <typename T>
+        T& Value() {
+            static_assert( is_valid_value_method_type<T>::value,
+                           "Type not permitted for method set_mysql_binds::SqlCType::Value()\npermitted types are: { "
+                           "char, unsigned char, short, unsigned short, int, unsigned int, long long, unsigned long "
+                           "long, float, double,  MYSQL_TIME }\n " );
+            return *static_cast<T*>( buffer );
+        }
     };
 
     // The idea for these templates from reddit user u/IyeOnline
@@ -118,6 +145,28 @@ namespace set_mysql_binds {
             : SqlCType( _fieldName, type, _buffer, _bufferLength ) {
         }
         virtual ~OutputCType() = default;
+        const std::vector<char>& CharVec() {
+            if ( !isCharArray( bufferType ) ) {
+                std::ostringstream os;
+                os << setcolor( Color::MAGENTA ) << "Warning: "
+                   << "set_mysql_binds::SqlCType::CharVec() should only be called when "
+                   << "set_mysql_binds::isCharArray(set_mysql_binds::SqlCType::bufferType)"
+                   << " evaluates to " << setcolor( Color::GREEN ) << "true."
+                   << "\n         set_mysql_binds::SqlCType::bufferType " << fieldTypes[bufferType] << " evaluates to "
+                   << setcolor( Color::RED ) << "false"
+                   << ".\n";
+                std::cerr << os.str();
+            }
+            return charVec;
+        }
+        template <typename T>
+        const T& Value() {
+            static_assert( is_valid_value_method_type<T>::value,
+                           "Type not permitted for method set_mysql_binds::SqlCType::Value()\npermitted types are: { "
+                           "char, unsigned char, short, unsigned short, int, unsigned int, long long, unsigned long "
+                           "long, float, double,  MYSQL_TIME }\n " );
+            return *static_cast<T*>( buffer );
+        }
     };
 
     template <typename T, enum_field_types Type>
@@ -184,8 +233,8 @@ namespace set_mysql_binds {
             std::cout << std::left << std::setw( 30 ) << charVec.data();
         }
         void set_value( const std::any& a ) override {
-            const char* newValue = std::any_cast<const char*>( a );
-            std::strcpy( charVec.data(), newValue );
+            std::string newValue = std::any_cast<std::string>( a );
+            std::strcpy( charVec.data(), newValue.c_str() );
             length = std::strlen( charVec.data() );
         }
     };
@@ -202,106 +251,6 @@ namespace set_mysql_binds {
             std::cout << std::left << std::setw( 30 ) << charVec.data();
         }
     };
-
-    using CharInput = TypeCharArrayInput<MYSQL_TYPE_STRING>;
-    using CharOutput = TypeCharArrayInput<MYSQL_TYPE_STRING>;
-
-    using VarCharInput = TypeCharArrayInput<MYSQL_TYPE_STRING>;
-    using VarCharOutput = TypeCharArrayOutput<MYSQL_TYPE_VAR_STRING>;
-
-    using TinyTextInput = TypeCharArrayInput<MYSQL_TYPE_STRING>;
-    using TinyTextOutput = TypeCharArrayOutput<MYSQL_TYPE_TINY_BLOB>;
-
-    using TextInput = TypeCharArrayInput<MYSQL_TYPE_STRING>;
-    using TextOutput = TypeCharArrayOutput<MYSQL_TYPE_BLOB>;
-
-    using BlobInput = TypeCharArrayInput<MYSQL_TYPE_BLOB>;
-    using BlobOutput = TypeCharArrayInput<MYSQL_TYPE_BLOB>;
-
-    using MediumTextInput = TypeCharArrayInput<MYSQL_TYPE_STRING>;
-    using MediumTextOutput = TypeCharArrayOutput<MYSQL_TYPE_MEDIUM_BLOB>;
-
-    using MediumBlobInput = TypeCharArrayInput<MYSQL_TYPE_BLOB>;
-    using MediumBlobOutput = TypeCharArrayOutput<MYSQL_TYPE_MEDIUM_BLOB>;
-
-    using LongTextInput = TypeCharArrayInput<MYSQL_TYPE_STRING>;
-    using LongTextOutput = TypeCharArrayOutput<MYSQL_TYPE_MEDIUM_BLOB>;
-
-    using LongBlobInput = TypeCharArrayInput<MYSQL_TYPE_BLOB>;
-    using LongBlobOutput = TypeCharArrayOutput<MYSQL_TYPE_LONG_BLOB>;
-
-    using TinyIntInput = TypeInputImpl<signed char, MYSQL_TYPE_TINY>;
-    using TinyIntInputUnsigned = TypeInputImpl<unsigned char, MYSQL_TYPE_TINY>;
-    using TinyIntOutput = TypeOutputImpl<signed char, MYSQL_TYPE_TINY>;
-    using TinyIntOutputUnsigned = TypeOutputImpl<unsigned char, MYSQL_TYPE_TINY>;
-
-    using SmallIntInput = TypeInputImpl<short, MYSQL_TYPE_SHORT>;
-    using SmallIntInputUnsigned = TypeInputImpl<unsigned short, MYSQL_TYPE_SHORT>;
-    using SmallIntOutput = TypeOutputImpl<short, MYSQL_TYPE_SHORT>;
-    using SmallIntOutputUnsigned = TypeOutputImpl<unsigned short, MYSQL_TYPE_SHORT>;
-
-    using MediumIntInput = TypeInputImpl<int, MYSQL_TYPE_LONG>;
-    using MediumIntInputUnsigned = TypeInputImpl<unsigned int, MYSQL_TYPE_LONG>;
-    using MediumIntOutput = TypeOutputImpl<int, MYSQL_TYPE_INT24>;
-    using MediumIntOutputUnsigned = TypeOutputImpl<unsigned int, MYSQL_TYPE_INT24>;
-
-    using IntInput = TypeInputImpl<int, MYSQL_TYPE_LONG>;
-    using IntInputUnsigned = TypeInputImpl<unsigned int, MYSQL_TYPE_LONG>;
-    using IntOutput = TypeOutputImpl<int, MYSQL_TYPE_LONG>;
-    using IntOutputUnsigned = TypeOutputImpl<unsigned int, MYSQL_TYPE_LONG>;
-
-    using BigIntInput = TypeInputImpl<long long, MYSQL_TYPE_LONGLONG>;
-    using BigIntInputUnsigned = TypeInputImpl<unsigned long long, MYSQL_TYPE_LONGLONG>;
-    using BigIntOutput = TypeOutputImpl<long long, MYSQL_TYPE_LONGLONG>;
-    using BigIntOutputUnsigned = TypeOutputImpl<unsigned long long, MYSQL_TYPE_LONGLONG>;
-
-    using FloatInput = TypeInputImpl<float, MYSQL_TYPE_FLOAT>;
-    using FloatOutput = TypeOutputImpl<float, MYSQL_TYPE_FLOAT>;
-
-    using DoubleInput = TypeInputImpl<double, MYSQL_TYPE_DOUBLE>;
-    using DoubleOutput = TypeOutputImpl<double, MYSQL_TYPE_DOUBLE>;
-
-    using DecimalInput = TypeInputImpl<double, MYSQL_TYPE_DOUBLE>;
-    using DecimalOutput = TypeCharArrayOutput<MYSQL_TYPE_NEWDECIMAL>;
-
-    using DateInput = TypeMysqlTimeInput<MYSQL_TYPE_DATE>;
-    using DateOutput = TypeMysqlTimeOutput<MYSQL_TYPE_DATE>;
-
-    using DateTimeInput = TypeMysqlTimeInput<MYSQL_TYPE_DATETIME>;
-    using DateTimeOutput = TypeMysqlTimeOutput<MYSQL_TYPE_DATETIME>;
-
-    using TimeStampInput = TypeMysqlTimeInput<MYSQL_TYPE_TIMESTAMP>;
-    using TimeStampOutput = TypeMysqlTimeOutput<MYSQL_TYPE_TIMESTAMP>;
-
-    using TimeInput = TypeMysqlTimeInput<MYSQL_TYPE_TIME>;
-    using TimeOutput = TypeMysqlTimeOutput<MYSQL_TYPE_TIME>;
-
-    using EnumInput = TypeCharArrayInput<MYSQL_TYPE_STRING>;
-    using EnumOutput = TypeCharArrayOutput<MYSQL_TYPE_STRING>;
-
-    using SetInput = TypeCharArrayInput<MYSQL_TYPE_STRING>;
-    using SetOutput = TypeCharArrayOutput<MYSQL_TYPE_STRING>;
-
-    using BooleanInput = TypeInputImpl<signed char, MYSQL_TYPE_TINY>;
-    using Booleanoutput = TypeOutputImpl<signed char, MYSQL_TYPE_TINY>;
-
-    using BitInput = TypeOutputImpl<unsigned long, MYSQL_TYPE_BIT>;
-    using BitOutput = TypeOutputImpl<unsigned long, MYSQL_TYPE_BIT>;
-
-    using GeometryInput = TypeCharArrayInput<MYSQL_TYPE_BLOB>;
-    using GeometryOutput = TypeCharArrayOutput<MYSQL_TYPE_BLOB>;
-
-    using JsonInput = TypeCharArrayInput<MYSQL_TYPE_JSON>;
-    using JsonOutput = TypeCharArrayOutput<MYSQL_TYPE_JSON>;
-
-    using BinaryInput = TypeCharArrayInput<MYSQL_TYPE_STRING>;
-    using BinaryOutput = TypeCharArrayOutput<MYSQL_TYPE_BLOB>;
-
-    using VarbinaryInput = TypeCharArrayInput<MYSQL_TYPE_BLOB>;
-    using VarbinaryOutput = TypeCharArrayOutput<MYSQL_TYPE_VAR_STRING>;
-
-    using TinyBlobInput = TypeCharArrayInput<MYSQL_TYPE_TINY_BLOB>;
-    using TinyBlobOutput = TypeCharArrayOutput<MYSQL_TYPE_TINY_BLOB>;
 
 }  // namespace set_mysql_binds
 
