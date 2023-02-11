@@ -15,8 +15,7 @@ namespace set_mysql_binds {
         std::string_view name;
         unsigned long buffer_size;
 
-        Element( std::string_view _name, unsigned long _buffer_size = 0 )
-            : name( _name ), buffer_size( +_buffer_size ) {
+        Element( std::string_view _name, unsigned long _buffer_size = 0 ) : name( _name ), buffer_size( _buffer_size ) {
         }
 
         std::unique_ptr<InputCType> makeInput() {
