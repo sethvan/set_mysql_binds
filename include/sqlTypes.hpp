@@ -3,6 +3,7 @@
 
 #include <mysql/mysql.h>
 
+#include <algorithm>
 #include <any>
 #include <cstring>
 #include <iomanip>
@@ -16,7 +17,7 @@
 
 /*
     These are all classes meant to be used in a wrapper for MYSQL_BIND arrays found in
-   binds.hpp. They are composed of the data types and the enum_field_types that are permitted to be used in
+   BindsArray.hpp. They are composed of the data types and the enum_field_types that are permitted to be used in
    prepared statements.
 
    There are 8 C types and 1 MYSQL type used (char, short, int, long long, float, double,
@@ -29,7 +30,7 @@ namespace set_mysql_binds {
 
     class SqlCType {
        protected:
-        std::vector<char> charVec;
+        std::vector<unsigned char> charVec;
 
        public:
         const std::string_view fieldName;
@@ -80,6 +81,32 @@ namespace set_mysql_binds {
         virtual void printValue() const = 0;  // mostly to make base class not instantiable
     };
 
+    // is_valid_value_method_type*********************************************
+    template <typename T>
+    struct is_valid_value_method_type : std::false_type {};
+    template <>
+    struct is_valid_value_method_type<char> : std::true_type {};
+    template <>
+    struct is_valid_value_method_type<unsigned char> : std::true_type {};
+    template <>
+    struct is_valid_value_method_type<short> : std::true_type {};
+    template <>
+    struct is_valid_value_method_type<unsigned short> : std::true_type {};
+    template <>
+    struct is_valid_value_method_type<int> : std::true_type {};
+    template <>
+    struct is_valid_value_method_type<unsigned int> : std::true_type {};
+    template <>
+    struct is_valid_value_method_type<long long> : std::true_type {};
+    template <>
+    struct is_valid_value_method_type<unsigned long long> : std::true_type {};
+    template <>
+    struct is_valid_value_method_type<float> : std::true_type {};
+    template <>
+    struct is_valid_value_method_type<double> : std::true_type {};
+    template <>
+    struct is_valid_value_method_type<MYSQL_TIME> : std::true_type {};
+
     class InputCType : public SqlCType {
        public:
         InputCType( std::string_view _fieldName, enum_field_types type, void* _buffer,
@@ -88,7 +115,7 @@ namespace set_mysql_binds {
         }
         virtual ~InputCType() = default;
         virtual void set_value( const std::any& a ) = 0;
-        std::vector<char>& CharVec() {
+        std::vector<unsigned char>& CharVec() {
             if ( !isCharArray( bufferType ) ) {
                 std::ostringstream os;
                 os << setcolor( Color::RED ) << "Error: "
@@ -123,11 +150,23 @@ namespace set_mysql_binds {
        public:
         TypeInputImpl() = delete;
         TypeInputImpl( std::string_view _fieldName, unsigned long long _bufferLength = 0 )
-            : InputCType( _fieldName, Type, &value, _bufferLength ) {
+            : InputCType( _fieldName, ( Type == MYSQL_TYPE_BOOL ? MYSQL_TYPE_TINY : Type ), &value, _bufferLength ) {
         }
 
         void printValue() const override {
-            std::cout << std::left << std::setw( 30 ) << value;
+            switch ( Type ) {
+                case MYSQL_TYPE_TINY:
+                    std::cout << std::left << std::setw( 30 ) << static_cast<int>( value );
+                    break;
+                case MYSQL_TYPE_BOOL: {
+                    bool x = static_cast<bool>( value );
+                    std::cout << std::boolalpha << std::left << std::setw( 30 ) << x;
+                    break;
+                }
+                default:
+                    std::cout << std::left << std::setw( 30 ) << value;
+                    break;
+            }
         }
 
         // Arguments for `a` that are lvalues need to match type T and
@@ -145,7 +184,7 @@ namespace set_mysql_binds {
             : SqlCType( _fieldName, type, _buffer, _bufferLength ) {
         }
         virtual ~OutputCType() = default;
-        const std::vector<char>& CharVec() {
+        const std::vector<unsigned char>& CharVec() {
             if ( !isCharArray( bufferType ) ) {
                 std::ostringstream os;
                 os << setcolor( Color::MAGENTA ) << "Warning: "
@@ -176,11 +215,23 @@ namespace set_mysql_binds {
        public:
         TypeOutputImpl() = delete;
         TypeOutputImpl( std::string_view _fieldName, unsigned long long _bufferLength = 0 )
-            : OutputCType( _fieldName, Type, &value, _bufferLength ) {
+            : OutputCType( _fieldName, ( Type == MYSQL_TYPE_BOOL ? MYSQL_TYPE_TINY : Type ), &value, _bufferLength ) {
         }
 
         void printValue() const override {
-            std::cout << std::left << std::setw( 30 ) << value;
+            switch ( Type ) {
+                case MYSQL_TYPE_TINY:
+                    std::cout << std::left << std::setw( 30 ) << static_cast<int>( value );
+                    break;
+                case MYSQL_TYPE_BOOL: {
+                    bool x = static_cast<bool>( value );
+                    std::cout << std::boolalpha << std::left << std::setw( 30 ) << x;
+                    break;
+                }
+                default:
+                    std::cout << std::left << std::setw( 30 ) << value;
+                    break;
+            }
         }
     };
 
@@ -234,8 +285,8 @@ namespace set_mysql_binds {
         }
         void set_value( const std::any& a ) override {
             std::string newValue = std::any_cast<std::string>( a );
-            std::strcpy( charVec.data(), newValue.c_str() );
-            length = std::strlen( charVec.data() );
+            std::copy( newValue.begin(), newValue.end(), charVec.begin() );
+            length = newValue.size();
         }
     };
 

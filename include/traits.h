@@ -1,9 +1,7 @@
 #ifndef INCLUDED_TRAITS_H
 #define INCLUDED_TRAITS_H
 
-#include "binds.hpp"
 #include "sqlTypes.hpp"
-#include "utilities.h"
 
 namespace set_mysql_binds {
 
@@ -183,8 +181,8 @@ namespace set_mysql_binds {
     };
     template <>
     struct BindType<BOOLEAN> {
-        using inType = TypeInputImpl<signed char, MYSQL_TYPE_TINY>;
-        using outType = TypeOutputImpl<signed char, MYSQL_TYPE_TINY>;
+        using inType = TypeInputImpl<signed char, MYSQL_TYPE_BOOL>;
+        using outType = TypeOutputImpl<signed char, MYSQL_TYPE_BOOL>;
     };
     template <>
     struct BindType<BIT> {

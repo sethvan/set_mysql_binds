@@ -3,11 +3,9 @@
 
 #include <algorithm>
 #include <exception>
-#include <initializer_list>
 #include <iomanip>
 #include <iostream>
 #include <memory>
-#include <optional>
 #include <unordered_map>
 #include <vector>
 
@@ -25,20 +23,20 @@
 namespace set_mysql_binds {
 
     template <typename T>
-    class Binds {
+    class BindsArray {
        private:
         std::vector<std::unique_ptr<T>> columns;
         std::vector<MYSQL_BIND> selection;
 
-        // linked to Binds::operator[] and Points to columns' elements.
+        // linked to BindsArray::operator[] and Points to columns' elements.
         // After object instantiated, do not want column elements added or deleted,
         // just access for selecting and modifying.
         std::unordered_map<std::string_view, T*> fields;
 
        public:
-        Binds() = delete;
-        Binds( std::vector<std::unique_ptr<T>> _columns );  // To set once the correct order of
-                                                            // MYSQL_BINDs for the prepared statement.
+        BindsArray() = delete;
+        BindsArray( std::vector<std::unique_ptr<T>> _columns );  // To set once the correct order of
+                                                                 // MYSQL_BINDs for the prepared statement.
 
         void displayFields() const;
         // Sets binds for whatever fields are marked is_selected
@@ -56,14 +54,14 @@ namespace set_mysql_binds {
     };
 
     template <typename T>
-    Binds<T>::Binds( std::vector<std::unique_ptr<T>> _columns ) : columns( std::move( _columns ) ) {
+    BindsArray<T>::BindsArray( std::vector<std::unique_ptr<T>> _columns ) : columns( std::move( _columns ) ) {
 
         std::for_each( columns.begin(), columns.end(),
                        [&]( const auto& column ) { fields[column->fieldName] = column.get(); } );
     }
 
     template <typename T>
-    void Binds<T>::displayFields() const {
+    void BindsArray<T>::displayFields() const {
         puts( "" );
         std::cout << std::left << std::setw( 45 ) << "Field Name";
         std::cout << std::left << std::setw( 30 ) << "Field Type";
@@ -79,7 +77,7 @@ namespace set_mysql_binds {
     }
 
     template <typename T>
-    void Binds<T>::setBinds() {
+    void BindsArray<T>::setBinds() {
         std::for_each( columns.begin(), columns.end(), [&]( auto& o ) {
             if ( o->is_selected ) {
                 selection.emplace_back();
@@ -89,7 +87,7 @@ namespace set_mysql_binds {
     }
 
     template <typename T>
-    void Binds<T>::setBinds( const std::vector<std::string_view>& sc ) {
+    void BindsArray<T>::setBinds( const std::vector<std::string_view>& sc ) {
 
         // to ensure arguments are valid
         std::for_each( sc.begin(), sc.end(), [&]( auto fieldName ) {
@@ -115,11 +113,11 @@ namespace set_mysql_binds {
         } );
 
         selection.erase( selection.begin(), selection.end() );  // in case a previous selection was made
-        Binds<T>::setBinds();
+        BindsArray<T>::setBinds();
     }
 
     template <typename T>
-    T* Binds<T>::operator[]( std::string_view fieldName ) {
+    T* BindsArray<T>::operator[]( std::string_view fieldName ) {
         return fields.at( fieldName );
     }
 

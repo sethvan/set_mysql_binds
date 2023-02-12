@@ -3,11 +3,7 @@
 
 #include <getDBTables.h>
 
-#include <fstream>
-#include <iostream>
-#include <sstream>
 #include <string>
-#include <string_view>
 
 namespace set_mysql_binds {
 

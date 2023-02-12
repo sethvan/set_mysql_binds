@@ -4,7 +4,6 @@
 
 #include <span>
 #include <string>
-#include <string_view>
 #include <vector>
 
 namespace set_mysql_binds {
