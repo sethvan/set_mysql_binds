@@ -30,14 +30,16 @@ namespace set_mysql_binds {
     template <MysqlInputType... Ts>
     BindsArray<InputCType> makeInputBindsArray( Bind<Ts>... objects ) {
         std::vector<std::unique_ptr<InputCType>> vec;
-        ( vec.emplace_back( std::forward<std::unique_ptr<InputCType>>( objects.makeInput() ) ), ... );
+        vec.reserve( sizeof...( objects ) );
+        ( vec.emplace_back( objects.makeInput() ), ... );
         return BindsArray<InputCType>( std::move( vec ) );
     }
 
     template <MysqlInputType... Ts>
     BindsArray<OutputCType> makeOutputBindsArray( Bind<Ts>... objects ) {
         std::vector<std::unique_ptr<OutputCType>> vec;
-        ( vec.emplace_back( std::forward<std::unique_ptr<OutputCType>>( objects->makeOutput() ) ), ... );
+        vec.reserve( sizeof...( objects ) );
+        ( vec.emplace_back( objects.makeOutput() ), ... );
         return BindsArray<OutputCType>( std::move( vec ) );
     }
 
