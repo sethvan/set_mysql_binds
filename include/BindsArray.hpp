@@ -70,8 +70,7 @@ namespace set_mysql_binds {
         std::for_each( columns.begin(), columns.end(), [&]( const auto& o ) {
             std::cout << std::left << std::setw( 45 ) << o->fieldName;
             std::cout << std::left << std::setw( 30 ) << fieldTypes[o->bufferType];
-            o->printValue();
-            std::cout << std::endl;
+            std::cout << std::left << o << std::endl;
         } );
         puts( "" );
     }
