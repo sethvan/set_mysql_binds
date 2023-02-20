@@ -5,8 +5,6 @@
 #include "createDBTableBinds.h"
 #include "getDBTables.h"
 #include "makeBinds.hpp"
-#include "setcolor.hpp"
-#include "sqlTypes.hpp"
 #include "traits.h"
 #include "typeCreationStrings.h"
 #include "utilities.h"

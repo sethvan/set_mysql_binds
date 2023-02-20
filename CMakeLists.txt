@@ -14,7 +14,8 @@ src/getDBTables.cpp
 src/createDBTableBinds.cpp
 )
 
-find_library(MYSQLCLIENT_LIBRARY NAMES mysqlclient)
+find_library(MYSQLCLIENT_LIBRARY NAMES mysqlclient HINTS "/usr/lib64/mysql/")
+
 
 if(MYSQLCLIENT_LIBRARY)
   target_link_libraries(set_mysql_binds PRIVATE ${MYSQLCLIENT_LIBRARY})

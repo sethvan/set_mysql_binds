@@ -9,7 +9,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include "sqlTypes.hpp"
+#include "SqlTypes/SqlCType.h"
 #include "utilities.h"
 
 /*
