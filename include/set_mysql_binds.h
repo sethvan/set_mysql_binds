@@ -5,8 +5,7 @@
 #include "createDBTableBinds.h"
 #include "getDBTables.h"
 #include "makeBinds.hpp"
-#include "traits.h"
-#include "typeCreationStrings.h"
+
 #include "utilities.h"
 
-#endif  // INCLUDED_SET_MYSQL_BINDS_H
+#endif // INCLUDED_SET_MYSQL_BINDS_H
