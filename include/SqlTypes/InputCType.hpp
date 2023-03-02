@@ -2,7 +2,6 @@
 #define INCLUDED_INPUTCTYPE_H
 
 #include "SqlTypes/SqlCType.h"
-#include "valTypes.h"
 
 namespace set_mysql_binds {
 
@@ -39,6 +38,9 @@ class InImpl : public InputCType {
                      _bufferLength ) {
       if constexpr ( std::same_as<T, std::basic_string<unsigned char>> ) {
          value.resize( _bufferLength, '\0' );
+      }
+      if constexpr ( std::same_as<T, MYSQL_TIME> ) {
+         std::memset( &value, 0, sizeof( value ) );
       }
    }
 
@@ -80,10 +82,16 @@ class InImpl : public InputCType {
          os << "NULL";
       } else if constexpr ( std::same_as<T, std::basic_string<unsigned char>> ) {
          std::copy( value.begin(), value.end(), std::ostream_iterator<unsigned char>{ os } );
-      } else if ( Type == MYSQL_TYPE_TINY ) {
+      } else if constexpr ( Type == MYSQL_TYPE_TINY ) {
          os << static_cast<int>( value );
-      } else if ( Type == MYSQL_TYPE_BOOL ) {
+      } else if constexpr ( Type == MYSQL_TYPE_BOOL ) {
          os << static_cast<bool>( value );
+      } else if constexpr ( std::same_as<T, MYSQL_TIME> ) {
+         os << value.year << "-" << ( value.month > 9 ? "" : "0" ) << std::to_string( value.month )
+            << "-" << ( value.day > 9 ? "" : "0" ) << std::to_string( value.day ) << " "
+            << ( value.hour > 9 ? "" : "0" ) << std::to_string( value.hour ) << ":"
+            << ( value.minute > 9 ? "" : "0" ) << std::to_string( value.minute ) << ":"
+            << ( value.second > 9 ? "" : "0" ) << std::to_string( value.second );
       } else {
          os << value;
       }
@@ -91,8 +99,5 @@ class InImpl : public InputCType {
    }
 };
 
-std::ostream& operator<<( std::ostream& os, const std::unique_ptr<InputCType>& obj ) {
-   return obj->print_value( os );
-}
 }  // namespace set_mysql_binds
 #endif  // INCLUDED_INPUTCTYPE_H

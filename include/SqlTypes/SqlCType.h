@@ -16,15 +16,15 @@
 #include "utilities.h"
 
 /*
-    These are all classes meant to be used in a wrapper for MYSQL_BIND arrays found in
-   BindsArray.hpp. They are composed of the data types and the enum_field_types that are
-   permitted to be used in prepared statements.
+    This is the base class meant to be used in a wrapper for MYSQL_BIND arrays found in
+   BindsArray.hpp. A concept, an enum and some type traits all related to MySQL and C type
+   information are placed here as well.
 
-   There are 8 C types and 1 MYSQL type used (char, short, int, long long, float, double,
-   MYSQL_TIME and char[]). However in the case of char[], various enum_field_types that
-   are valid for receiving data as char[] are not permitted to be used for requesting
-   data. This is why I decided to amplify this class hierarchy using interfaces InputCType
-   and OutputCType and as well change the wrapper to a template class.
+   There are 8 C types and 1 MYSQL type used (char, short, int, long long, float, double, MYSQL_TIME
+   and char[]). However in the case of char[], various enum_field_types that are valid for receiving
+   data as char[] are not permitted to be used for requesting data. This is why I decided to amplify
+   this class hierarchy using interfaces InputCType and OutputCType in their respective hpp files.
+   Also have opted for using Long instead of Long Long for design reasons.
 */
 
 namespace set_mysql_binds {
@@ -70,7 +70,7 @@ class SqlCType {
        std::ostream& os ) const = 0;  // mostly to make base class not instantiable
 };
 
-// is_valid_value_method_type*********************************************
+// is_approved_type*********************************************
 template <typename T>
 struct is_approved_type : std::false_type {};
 template <>
@@ -139,6 +139,145 @@ enum class MysqlInputType {
    BINARY,
    VARBINARY,
    TINYBLOB
+};
+
+// To facilitate Value() methods of InputCType and OutputCType which return references to the
+// derived class's value members.
+using enum MysqlInputType;
+
+template <MysqlInputType T>
+struct ValType {};
+template <>
+struct ValType<INT> {
+   using type = int;
+};
+template <>
+struct ValType<INT_UNSIGNED> {
+   using type = unsigned int;
+};
+template <>
+struct ValType<CHAR> {
+   using type = unsigned char;
+};
+template <>
+struct ValType<VARCHAR> {
+   using type = std::basic_string<unsigned char>;
+};
+template <>
+struct ValType<TINYTEXT> {
+   using type = std::basic_string<unsigned char>;
+};
+template <>
+struct ValType<TEXT> {
+   using type = std::basic_string<unsigned char>;
+};
+template <>
+struct ValType<BLOB> {
+   using type = std::basic_string<unsigned char>;
+};
+template <>
+struct ValType<MEDIUMTEXT> {
+   using type = std::basic_string<unsigned char>;
+};
+template <>
+struct ValType<MEDIUMBLOB> {
+   using type = std::basic_string<unsigned char>;
+};
+template <>
+struct ValType<LONGTEXT> {
+   using type = std::basic_string<unsigned char>;
+};
+template <>
+struct ValType<LONGBLOB> {
+   using type = std::basic_string<unsigned char>;
+};
+template <>
+struct ValType<TINYINT> {
+   using type = signed char;
+};
+template <>
+struct ValType<TINYINT_UNSIGNED> {
+   using type = unsigned char;
+};
+template <>
+struct ValType<SMALLINT> {
+   using type = short;
+};
+template <>
+struct ValType<SMALLINT_UNSIGNED> {
+   using type = unsigned short;
+};
+template <>
+struct ValType<BIGINT> {
+   using type = long;
+};
+template <>
+struct ValType<BIGINT_UNSIGNED> {
+   using type = unsigned long;
+};
+template <>
+struct ValType<FLOAT> {
+   using type = float;
+};
+template <>
+struct ValType<DOUBLE> {
+   using type = double;
+};
+template <>
+struct ValType<DECIMAL> {  // this one is special
+   using type = double;
+};
+template <>
+struct ValType<DATE> {
+   using type = MYSQL_TIME;
+};
+template <>
+struct ValType<DATETIME> {
+   using type = MYSQL_TIME;
+};
+template <>
+struct ValType<TIMESTAMP> {
+   using type = MYSQL_TIME;
+};
+template <>
+struct ValType<TIME> {
+   using type = MYSQL_TIME;
+};
+template <>
+struct ValType<ENUM> {
+   using type = std::basic_string<unsigned char>;
+};
+template <>
+struct ValType<SET> {
+   using type = std::basic_string<unsigned char>;
+};
+template <>
+struct ValType<BOOLEAN> {
+   using type = signed char;
+};
+template <>
+struct ValType<BIT> {
+   using type = unsigned long;
+};
+template <>
+struct ValType<GEOMETRY> {
+   using type = std::basic_string<unsigned char>;
+};
+template <>
+struct ValType<JSON> {
+   using type = std::basic_string<unsigned char>;
+};
+template <>
+struct ValType<BINARY> {
+   using type = std::basic_string<unsigned char>;
+};
+template <>
+struct ValType<VARBINARY> {
+   using type = std::basic_string<unsigned char>;
+};
+template <>
+struct ValType<TINYBLOB> {
+   using type = std::basic_string<unsigned char>;
 };
 
 }  // namespace set_mysql_binds
