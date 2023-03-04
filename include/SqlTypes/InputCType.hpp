@@ -34,10 +34,12 @@ class InImpl : public InputCType {
   public:
    InImpl() = delete;
    InImpl( std::string_view _fieldName, unsigned long long _bufferLength = 0 )
-       : InputCType( _fieldName, ( Type == MYSQL_TYPE_BOOL ? MYSQL_TYPE_TINY : Type ), &value,
+       : InputCType( _fieldName, ( Type == MYSQL_TYPE_BOOL ? MYSQL_TYPE_TINY : Type ),
+                     ( std::same_as<T, std::basic_string<unsigned char>> ? nullptr : &value ),
                      _bufferLength ) {
       if constexpr ( std::same_as<T, std::basic_string<unsigned char>> ) {
          value.resize( _bufferLength, '\0' );
+         buffer = value.data();
       }
       if constexpr ( std::same_as<T, MYSQL_TIME> ) {
          std::memset( &value, 0, sizeof( value ) );
@@ -58,6 +60,7 @@ class InImpl : public InputCType {
    void set_value( std::string_view newValue ) override {
       if constexpr ( std::same_as<T, std::basic_string<unsigned char>> ) {
          std::copy( newValue.begin(), newValue.end(), value.begin() );
+         length = newValue.size();
       } else {
          throw std::runtime_error( mismatch );
       }
@@ -65,6 +68,7 @@ class InImpl : public InputCType {
    void set_value( std::span<const unsigned char> newValue ) override {
       if constexpr ( std::same_as<T, std::basic_string<unsigned char>> ) {
          std::copy( newValue.begin(), newValue.end(), value.begin() );
+         length = newValue.size();
       } else {
          throw std::runtime_error( mismatch );
       }

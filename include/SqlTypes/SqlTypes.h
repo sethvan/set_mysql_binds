@@ -13,6 +13,10 @@ std::ostream& operator<<( std::ostream& os, const std::unique_ptr<InputCType>& o
 
 std::ostream& operator<<( std::ostream& os, const std::unique_ptr<OutputCType>& obj );
 
+std::ostream& operator<<( std::ostream& os, const InputCType& obj ); 
+
+std::ostream& operator<<( std::ostream& os, const OutputCType& obj ); 
+
 }  // namespace set_mysql_binds
 
 #endif  // INCLUDED_SQLTYPES_H

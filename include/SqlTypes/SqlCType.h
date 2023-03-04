@@ -12,6 +12,7 @@
 #include <string>
 #include <string_view>
 #include <type_traits>
+#include <vector>
 
 #include "utilities.h"
 
@@ -161,35 +162,35 @@ struct ValType<CHAR> {
 };
 template <>
 struct ValType<VARCHAR> {
-   using type = std::basic_string<unsigned char>;
+   using type = unsigned char;
 };
 template <>
 struct ValType<TINYTEXT> {
-   using type = std::basic_string<unsigned char>;
+   using type = unsigned char;
 };
 template <>
 struct ValType<TEXT> {
-   using type = std::basic_string<unsigned char>;
+   using type = unsigned char;
 };
 template <>
 struct ValType<BLOB> {
-   using type = std::basic_string<unsigned char>;
+   using type = unsigned char;
 };
 template <>
 struct ValType<MEDIUMTEXT> {
-   using type = std::basic_string<unsigned char>;
+   using type = unsigned char;
 };
 template <>
 struct ValType<MEDIUMBLOB> {
-   using type = std::basic_string<unsigned char>;
+   using type = unsigned char;
 };
 template <>
 struct ValType<LONGTEXT> {
-   using type = std::basic_string<unsigned char>;
+   using type = unsigned char;
 };
 template <>
 struct ValType<LONGBLOB> {
-   using type = std::basic_string<unsigned char>;
+   using type = unsigned char;
 };
 template <>
 struct ValType<TINYINT> {
@@ -245,11 +246,11 @@ struct ValType<TIME> {
 };
 template <>
 struct ValType<ENUM> {
-   using type = std::basic_string<unsigned char>;
+   using type = unsigned char;
 };
 template <>
 struct ValType<SET> {
-   using type = std::basic_string<unsigned char>;
+   using type = unsigned char;
 };
 template <>
 struct ValType<BOOLEAN> {
@@ -261,23 +262,23 @@ struct ValType<BIT> {
 };
 template <>
 struct ValType<GEOMETRY> {
-   using type = std::basic_string<unsigned char>;
+   using type = unsigned char;
 };
 template <>
 struct ValType<JSON> {
-   using type = std::basic_string<unsigned char>;
+   using type = unsigned char;
 };
 template <>
 struct ValType<BINARY> {
-   using type = std::basic_string<unsigned char>;
+   using type = unsigned char;
 };
 template <>
 struct ValType<VARBINARY> {
-   using type = std::basic_string<unsigned char>;
+   using type = unsigned char;
 };
 template <>
 struct ValType<TINYBLOB> {
-   using type = std::basic_string<unsigned char>;
+   using type = unsigned char;
 };
 
 }  // namespace set_mysql_binds

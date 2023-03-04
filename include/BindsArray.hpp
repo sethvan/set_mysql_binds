@@ -32,15 +32,17 @@ class BindsArray {
    // linked to BindsArray::operator[] and Points to columns' elements.
    // After object instantiated, do not want column elements added or deleted,
    // just access for selecting and modifying.
-   std::unordered_map<std::string_view, T*> fields;
+   std::unordered_map<std::string_view, T*> fieldsMap;
 
   public:
+   std::vector<T*> fields;
    BindsArray() = delete;
    BindsArray(
        std::vector<std::unique_ptr<T>> _columns );  // To set once the correct order of
                                                     // MYSQL_BINDs for the prepared statement.
 
-   void displayFields() const;
+   void displayAllFields() const;
+   void displaySelectedFields() const;
    // Sets binds for whatever fields are marked is_selected
    // By default all fields are marked is_selected during construction
    void setBinds();
@@ -56,12 +58,15 @@ class BindsArray {
 template <typename T>
 BindsArray<T>::BindsArray( std::vector<std::unique_ptr<T>> _columns )
     : columns( std::move( _columns ) ) {
-   std::for_each( columns.begin(), columns.end(),
-                  [ & ]( const auto& column ) { fields[ column->fieldName ] = column.get(); } );
+   std::for_each( columns.begin(), columns.end(), [ & ]( const auto& column ) {
+      fieldsMap[ column->fieldName ] = column.get();
+      fields.push_back( column.get() );
+   } );
+   BindsArray<T>::setBinds();
 }
 
 template <typename T>
-void BindsArray<T>::displayFields() const {
+void BindsArray<T>::displayAllFields() const {
    puts( "" );
    std::cout << std::left << std::setw( 45 ) << "Field Name";
    std::cout << std::left << std::setw( 30 ) << "Field Type";
@@ -72,6 +77,24 @@ void BindsArray<T>::displayFields() const {
       std::cout << std::left << std::setw( 45 ) << o->fieldName;
       std::cout << std::left << std::setw( 30 ) << fieldTypes[ o->bufferType ];
       std::cout << std::left << o << std::endl;
+   } );
+   puts( "" );
+}
+
+template <typename T>
+void BindsArray<T>::displaySelectedFields() const {
+   puts( "" );
+   std::cout << std::left << std::setw( 45 ) << "Field Name";
+   std::cout << std::left << std::setw( 30 ) << "Field Type";
+   std::cout << std::left << std::setw( 30 ) << "Field Value" << '\n';
+   std::cout << std::left << std::setw( 105 ) << std::setfill( '-' ) << '-' << std::setfill( ' ' )
+             << '\n';
+   std::for_each( columns.begin(), columns.end(), [ & ]( const auto& o ) {
+      if ( o->is_selected ) {
+         std::cout << std::left << std::setw( 45 ) << o->fieldName;
+         std::cout << std::left << std::setw( 30 ) << fieldTypes[ o->bufferType ];
+         std::cout << std::left << o << std::endl;
+      }
    } );
    puts( "" );
 }
@@ -116,7 +139,7 @@ void BindsArray<T>::setBinds( const std::vector<std::string_view>& sc ) {
 
 template <typename T>
 T* BindsArray<T>::operator[]( std::string_view fieldName ) {
-   return fields.at( fieldName );
+   return fieldsMap.at( fieldName );
 }
 
 }  // namespace set_mysql_binds

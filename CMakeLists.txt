@@ -28,5 +28,5 @@ target_include_directories( set_mysql_binds PUBLIC include )
 target_compile_features( set_mysql_binds PRIVATE cxx_std_20)
 target_link_options( set_mysql_binds PRIVATE -fsanitize=address)
 target_compile_options( set_mysql_binds PRIVATE
-    -Wall -Wextra -Wconversion -Wl,-z,defs -fwrapv -O3
+    -Wall -Wextra -Wconversion -Wl,-z,defs -fwrapv -O3 
 )
