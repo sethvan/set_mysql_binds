@@ -120,9 +120,7 @@ std::vector<Table> getDBTables( const std::string& host, const std::string& user
    return tables;
 }
 
-void printDBTables( const std::string& host, const std::string& user, const std::string& password,
-                    const std::string& database ) {
-   std::vector<Table> tables = getDBTables( host, user, password, database );
+void printDBTables( std::span<const Table> tables ) {
    std::for_each( tables.begin(), tables.end(), [ & ]( const auto& table ) {
       std::cout << "\n\nTable: " << table.name << '\n';
       puts( "" );
@@ -147,29 +145,10 @@ void printDBTables( const std::string& host, const std::string& user, const std:
    puts( "" );
 }
 
-void printDBTables( std::span<const Table> tables ) {
-   std::for_each( tables.begin(), tables.end(), [ & ]( const auto& table ) {
-      std::cout << "\n\nTable: " << table.name << '\n';
-      puts( "" );
-      std::cout << std::left << std::setw( 55 ) << "Field Name";
-      std::cout << std::left << std::setw( 30 ) << "Internal Field Type";
-      std::cout << std::left << std::setw( 30 ) << "External Field Type";
-      std::cout << std::left << std::setw( 30 ) << "Unsigned" << '\n';
-      std::cout << std::left << std::setw( 125 ) << std::setfill( '-' ) << '-'
-                << std::setfill( ' ' ) << '\n';
-
-      puts( "" );
-      std::for_each( table.fields.begin(), table.fields.end(), [ & ]( const auto& field ) {
-         std::cout << std::left << std::setw( 55 ) << field.name;
-         std::cout << std::left << std::setw( 30 ) << fieldTypes[ field.type ];
-         std::cout << std::left << std::setw( 30 ) << field.externalType;
-         std::cout << std::boolalpha << std::left << std::setw( 10 )
-                   << ( ( field.flags & UNSIGNED_FLAG ) == static_cast<int>( UNSIGNED_FLAG ) );
-         std::cout << std::endl;
-      } );
-   } );
-
-   puts( "" );
+void printDBTables( const std::string& host, const std::string& user, const std::string& password,
+                    const std::string& database ) {
+   std::vector<Table> tables = getDBTables( host, user, password, database );
+   printDBTables( tables );
 }
 
 }  // namespace set_mysql_binds
