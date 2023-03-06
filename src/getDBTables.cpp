@@ -66,9 +66,6 @@ std::vector<Table> getDBTables( const std::string& host, const std::string& user
       }
 
       std::stringstream ss;
-      // To get the initial data type externally given by user which we use to retrieve
-      // the BindsArray builder command for it's field from the typeCreationStrings
-      // TurnerMap
       ss << "SELECT column_name, data_type FROM information_schema.columns "
             "WHERE table_name = \'"
          << row[ 0 ] << "\'";
