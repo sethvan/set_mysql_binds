@@ -13,10 +13,11 @@ class InputCType : public SqlCType {
                unsigned long long _bufferLength = 0 )
        : SqlCType( _fieldName, type, _buffer, _bufferLength ) {}
    virtual ~InputCType() = default;
-   virtual void set_value( long double newValue ) = 0;
-   virtual void set_value( std::string_view newValue ) = 0;
-   virtual void set_value( std::span<const unsigned char> newValue ) = 0;
-   virtual void set_value( const MYSQL_TIME& newValue ) = 0;
+   InputCType& operator=( const InputCType& ) = delete;
+   virtual void operator=( long double newValue ) = 0;
+   virtual void operator=( std::string_view newValue ) = 0;
+   virtual void operator=( std::span<const unsigned char> newValue ) = 0;
+   virtual void operator=( const MYSQL_TIME& newValue ) = 0;
 
    template <MysqlInputType type>
    auto& Value() {
@@ -28,7 +29,7 @@ class InputCType : public SqlCType {
 template <ApprovedType T, enum_field_types Type>
 class InImpl : public InputCType {
    static constexpr const char* mismatch =
-       "\'value member type\' does not match argument given to set_value() method";
+       "\'value member type\' does not match argument given to operator=() method";
    T value;
 
   public:
@@ -46,7 +47,7 @@ class InImpl : public InputCType {
       }
    }
 
-   void set_value( long double newValue ) override {
+   void operator=( long double newValue ) override {
       if constexpr ( std::integral<T> or std::floating_point<T> ) {
          T x = static_cast<T>( newValue );
          if ( static_cast<long double>( x ) != newValue ) {
@@ -57,7 +58,7 @@ class InImpl : public InputCType {
          throw std::runtime_error( mismatch );
       }
    }
-   void set_value( std::string_view newValue ) override {
+   void operator=( std::string_view newValue ) override {
       if constexpr ( std::same_as<T, std::basic_string<unsigned char>> ) {
          std::copy( newValue.begin(), newValue.end(), value.begin() );
          length = newValue.size();
@@ -65,7 +66,7 @@ class InImpl : public InputCType {
          throw std::runtime_error( mismatch );
       }
    }
-   void set_value( std::span<const unsigned char> newValue ) override {
+   void operator=( std::span<const unsigned char> newValue ) override {
       if constexpr ( std::same_as<T, std::basic_string<unsigned char>> ) {
          std::copy( newValue.begin(), newValue.end(), value.begin() );
          length = newValue.size();
@@ -73,7 +74,7 @@ class InImpl : public InputCType {
          throw std::runtime_error( mismatch );
       }
    }
-   void set_value( const MYSQL_TIME& newValue ) override {
+   void operator=( const MYSQL_TIME& newValue ) override {
       if constexpr ( std::same_as<T, MYSQL_TIME> ) {
          value = newValue;
       } else {

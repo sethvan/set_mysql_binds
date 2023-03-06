@@ -52,7 +52,8 @@ class BindsArray {
    size_t getBindsSize() const {  // for testing during development
       return selection.size();
    }
-   [[nodiscard]] T* operator[]( std::string_view fieldName );
+   [[nodiscard]] T& operator[]( std::string_view fieldName );
+   [[nodiscard]] T& operator[]( size_t index );
 };
 
 template <typename T>
@@ -138,8 +139,17 @@ void BindsArray<T>::setBinds( const std::vector<std::string_view>& sc ) {
 }
 
 template <typename T>
-T* BindsArray<T>::operator[]( std::string_view fieldName ) {
-   return fieldsMap.at( fieldName );
+T& BindsArray<T>::operator[]( std::string_view fieldName ) {
+   return *fieldsMap.at( fieldName );
+}
+
+template <typename T>
+T& BindsArray<T>::operator[]( size_t index ) {
+   if ( index > fields.size() ) {
+      throw std::out_of_range(
+          "Index provided to operator[] greater than fields.size() of BindsArray object\n" );
+   }
+   return *fields[ index ];
 }
 
 }  // namespace set_mysql_binds

@@ -94,17 +94,17 @@ std::vector<Table> getDBTables( const std::string& host, const std::string& user
       }
 
       MYSQL_ROW dataTypeRow;
-      std::vector<InputtedType> inTypes;
+      std::vector<InputtedType> inputtedTypes;
       // Results obtained in different loops because output sequence of the 2 fetch
       // function results do not always match. Instead must use std::find_if() with these
       // results in the loop after this one.
       while ( ( dataTypeRow = mysql_fetch_row( userInputtedData ) ) ) {
-         inTypes.emplace_back( dataTypeRow[ 0 ], dataTypeRow[ 1 ] );
+         inputtedTypes.emplace_back( dataTypeRow[ 0 ], dataTypeRow[ 1 ] );
       }
 
       for ( unsigned int j = 0; j < mysql_num_fields( fields ); j++ ) {
          MYSQL_FIELD* field = mysql_fetch_field_direct( fields, j );
-         auto it = std::find_if( inTypes.begin(), inTypes.end(),
+         auto it = std::find_if( inputtedTypes.begin(), inputtedTypes.end(),
                                  [ & ]( const auto& s ) { return s.fieldName == field->name; } );
 
          tables.back().fields.emplace_back( field->name, field->type, field->flags, it->type );
