@@ -70,10 +70,6 @@ class InImpl : public InputCType {
       if constexpr ( std::same_as<T, std::basic_string<unsigned char>> ) {
          std::copy( newValue.begin(), newValue.end(), value.begin() );
          length = newValue.size();
-         template <MysqlInputType type>
-         auto& Value() {
-            return *static_cast<ValType<type>::type*>( buffer );
-         }
       } else {
          throw std::runtime_error( mismatch );
       }
