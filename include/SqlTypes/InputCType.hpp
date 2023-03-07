@@ -62,6 +62,8 @@ class InImpl : public InputCType {
       if constexpr ( std::same_as<T, std::basic_string<unsigned char>> ) {
          std::copy( newValue.begin(), newValue.end(), value.begin() );
          length = newValue.size();
+      } else if constexpr ( std::integral<T> or std::floating_point<T> ) {
+         operator=( std::stold( std::string( newValue ) ) );
       } else {
          throw std::runtime_error( mismatch );
       }
