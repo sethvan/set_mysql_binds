@@ -52,8 +52,10 @@ class InImpl : public InputCType {
    void operator=( long double newValue ) override {
       if constexpr ( std::integral<T> or std::floating_point<T> ) {
          T x = static_cast<T>( newValue );
-         if ( static_cast<long double>( x ) != newValue ) {
-            throw std::runtime_error( mismatch );
+         if ( strict_fundamental_type_checking ) {
+            if ( static_cast<long double>( x ) != newValue ) {
+               throw std::runtime_error( mismatch );
+            }
          }
          value = x;
       } else {

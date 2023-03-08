@@ -51,4 +51,6 @@ bool isCharArray( enum_field_types type ) {
    return ( ( enumValue > 248 && enumValue < 255 ) || enumValue == 246 );
 }
 
+bool strict_fundamental_type_checking = false;
+
 }  // namespace set_mysql_binds
