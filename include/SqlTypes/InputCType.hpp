@@ -17,7 +17,7 @@ class InputCType : public SqlCType {
    virtual ~InputCType() = default;
    InputCType& operator=( const InputCType& ) = delete;
    virtual void operator=( long double newValue ) = 0;
-   virtual void operator=( std::string_view newValue ) = 0;
+   virtual void operator=( const std::string& newValue ) = 0;
    virtual void operator=( std::span<const unsigned char> newValue ) = 0;
    virtual void operator=( const MYSQL_TIME& newValue ) = 0;
 
@@ -62,7 +62,7 @@ class InImpl : public InputCType {
          throw std::runtime_error( mismatch );
       }
    }
-   void operator=( std::string_view newValue ) override {
+   void operator=( const std::string& newValue ) override {
       if ( !newValue.length() ) {
          isNull = true;
          return;
@@ -70,8 +70,12 @@ class InImpl : public InputCType {
       if constexpr ( std::same_as<T, std::basic_string<unsigned char>> ) {
          std::copy( newValue.begin(), newValue.end(), value.begin() );
          length = newValue.size();
-      } else if constexpr ( std::integral<T> or std::floating_point<T> ) {
-         operator=( std::stold( std::string( newValue ) ) );
+      } else if constexpr ( std::integral<T> ) {
+         value = std::stol( newValue );
+      } else if constexpr ( std::same_as<T, float> ) {
+         value = std::stof( newValue );
+      } else if constexpr ( std::same_as<T, double> ) {
+         value = std::stod( newValue );
       } else {
          throw std::runtime_error( mismatch );
       }
