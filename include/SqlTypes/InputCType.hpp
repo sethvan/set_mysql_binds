@@ -69,8 +69,6 @@ class InImpl : public InputCType {
          std::copy( newValue.begin(), newValue.end(), value.begin() );
          length = newValue.size();
       } else if constexpr ( std::integral<T> or std::floating_point<T> ) {
-         std::cerr << "newValue: \"" << newValue << "\""
-                   << '\n';  // temporarily adding line for testing
          operator=( std::stold( std::string( newValue ) ) );
       } else {
          throw std::runtime_error( mismatch );
