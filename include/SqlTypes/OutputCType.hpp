@@ -46,10 +46,15 @@ class OutImpl : public OutputCType {
       if ( isNull ) {
          os << "NULL";
       } else if constexpr ( std::same_as<T, std::basic_string<unsigned char>> ) {
-         std::string out;
-         out.reserve( length );
-         std::copy( value.begin(), std::next( value.begin(), length ), std::back_inserter( out ) );
-         os << out;
+         if ( value.size() ) {
+            std::string out;
+            out.reserve( length );
+            std::copy( value.begin(), std::next( value.begin(), length ),
+                       std::back_inserter( out ) );
+            os << out;
+         } else {
+            os << "NULL";
+         }
       } else if constexpr ( Type == MYSQL_TYPE_TINY ) {
          os << static_cast<int>( value );
       } else if constexpr ( Type == MYSQL_TYPE_BOOL ) {
